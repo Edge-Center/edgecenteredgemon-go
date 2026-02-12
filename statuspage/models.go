@@ -3,8 +3,8 @@ package statuspage
 type Base struct {
 	Name        string `json:"name"`
 	Slug        string `json:"slug"`
-	Description string `json:"description"`
-	CustomStyle string `json:"custom_style"`
+	Description string `json:"description,omitempty"`
+	CustomStyle string `json:"custom_style,omitempty"`
 }
 type Request struct {
 	Base
