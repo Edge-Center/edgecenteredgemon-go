@@ -15,7 +15,7 @@ type CheckPing struct {
 	Interval     int `json:"interval,omitempty"`
 	CheckTimeout int `json:"check_timeout"`
 
-	TelegramChannelID int ` json:"telegram_channel_id,omitempty"`
+	TelegramChannelID int `json:"telegram_channel_id,omitempty"`
 	SlackChannelID    int `json:"slack_channel_id,omitempty"`
 	MMChannelID       int `json:"mm_channel_id,omitempty"`
 	PDChannelID       int `json:"pd_channel_id,omitempty"`
