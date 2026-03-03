@@ -9,7 +9,8 @@ import (
 // All SDK services (channel, checkgroup, checkhttp, etc.) call only Request:
 // they pass method, path, payload, and a pointer to result; the Requester implementation
 // decides how to build the request, sign it, and decode the response.
-// Implemented by provider.Client (Request method in edgecenter/provider/provider.go).
+// The primary implementation is [provider.Client], which handles
+// JSON encoding, request signing, and error parsing.
 // Example call from a service: s.r.Request(ctx, http.MethodPost, "/rmon/channel/telegram", req, &resp).
 type Requester interface {
 	Request(ctx context.Context, method, path string, payload interface{}, result interface{}) error
@@ -17,8 +18,7 @@ type Requester interface {
 
 // RequestSigner adds authorization data to a request (e.g. the Authorization header).
 // It keeps signing logic in one place instead of in every service.
-// In the provider it is used in Client.do(req): before c.httpc.Do(req), c.signer.Sign(req) is called;
-// if the signer was set via WithSigner, it adds the required headers (APIKey, Bearer, etc.) to req.
+// Pass an implementation via [provider.WithSigner] when constructing the client.
 type RequestSigner interface {
 	Sign(req *http.Request) error
 }
