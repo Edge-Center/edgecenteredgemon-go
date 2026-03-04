@@ -5,19 +5,28 @@ import (
 	"net/http"
 )
 
-// Requester — интерфейс, который должен реализовать HTTP-клиент SDK.
-// Все сервисы SDK вызывают только Request(...), как в edgecentercdn-go.
+// Requester is the abstraction for sending a single HTTP request to the API.
+// All SDK services (channel, checkgroup, checkhttp, etc.) call only Request:
+// they pass method, path, payload, and a pointer to result; the Requester implementation
+// decides how to build the request, sign it, and decode the response.
+//
+// The primary implementation is [provider.Client], which handles
+// JSON encoding, request signing, and error parsing.
 type Requester interface {
 	Request(ctx context.Context, method, path string, payload interface{}, result interface{}) error
 }
 
-// RequestSigner — механизм подписания HTTP-запросов.
-// В провайдере EdgeCenter используется signer, который ставит заголовки авторизации.
+// RequestSigner adds authorization data to an outgoing [http.Request]
+// (e.g. the Authorization header).
+// It keeps signing logic in one place instead of spreading it across every service.
+// Pass an implementation via [provider.WithSigner] when constructing the client.
 type RequestSigner interface {
 	Sign(req *http.Request) error
 }
 
-// RequestSignerFunc — адаптер, чтобы любая функция могла быть Signer-ом.
+// RequestSignerFunc is an adapter: a plain function with signature func(*http.Request) error
+// implements the RequestSigner interface. Same idea as http.HandlerFunc in the standard library:
+// no need to define a separate type with a Sign method, just pass a function.
 type RequestSignerFunc func(req *http.Request) error
 
 func (f RequestSignerFunc) Sign(req *http.Request) error {
