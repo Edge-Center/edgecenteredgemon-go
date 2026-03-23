@@ -55,6 +55,8 @@ func (c *Client) Request(ctx context.Context, method, path string, payload inter
 		return fmt.Errorf("do request: %w", err)
 	}
 
+	defer resp.Body.Close()
+
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusBadRequest {
 		raw, _ := io.ReadAll(resp.Body)
 		return fmt.Errorf("http %d: %s", resp.StatusCode, string(raw))
