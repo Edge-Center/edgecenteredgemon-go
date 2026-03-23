@@ -28,8 +28,10 @@ type CheckSMTP struct {
 	Runbook string `json:"runbook,omitempty"`
 }
 
-type Request = CheckSMTP
-type Response = CheckSMTP
+type (
+	Request  = CheckSMTP
+	Response = CheckSMTP
+)
 
 type CreateResponse struct {
 	ID int `json:"id"`

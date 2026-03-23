@@ -28,8 +28,10 @@ type CheckRabbitMQ struct {
 	Runbook string `json:"runbook,omitempty"`
 }
 
-type Request = CheckRabbitMQ
-type Response = CheckRabbitMQ
+type (
+	Request  = CheckRabbitMQ
+	Response = CheckRabbitMQ
+)
 
 type CreateResponse struct {
 	ID int `json:"id"`

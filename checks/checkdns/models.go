@@ -27,8 +27,10 @@ type CheckDNS struct {
 	Runbook    string `json:"runbook,omitempty"`
 }
 
-type Request = CheckDNS
-type Response = CheckDNS
+type (
+	Request  = CheckDNS
+	Response = CheckDNS
+)
 
 type CreateResponse struct {
 	ID int `json:"id"`
