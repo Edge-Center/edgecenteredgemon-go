@@ -26,8 +26,10 @@ type CheckTCP struct {
 	Runbook string `json:"runbook,omitempty"`
 }
 
-type Request = CheckTCP
-type Response = CheckTCP
+type (
+	Request  = CheckTCP
+	Response = CheckTCP
+)
 
 type CreateResponse struct {
 	ID int `json:"id"`

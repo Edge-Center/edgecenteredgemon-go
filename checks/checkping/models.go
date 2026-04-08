@@ -26,8 +26,10 @@ type CheckPing struct {
 	Runbook string `json:"runbook,omitempty"`
 }
 
-type Request = CheckPing
-type Response = CheckPing
+type (
+	Request  = CheckPing
+	Response = CheckPing
+)
 
 type CreateResponse struct {
 	ID int `json:"id"`

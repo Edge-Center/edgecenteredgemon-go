@@ -32,8 +32,10 @@ type CheckHTTP struct {
 	Runbook   string `json:"runbook,omitempty"`
 }
 
-type Request = CheckHTTP
-type Response = CheckHTTP
+type (
+	Request  = CheckHTTP
+	Response = CheckHTTP
+)
 
 type CreateResponse struct {
 	ID int `json:"id"`
