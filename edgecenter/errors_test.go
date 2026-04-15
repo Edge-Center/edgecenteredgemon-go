@@ -34,6 +34,14 @@ func TestErrorResponse_Error(t *testing.T) {
 			resp:     &ErrorResponse{Message: "priority message", Errors: &errorsFilled},
 			expected: "priority message",
 		},
+		{
+			name: "errors with invalid JSON returns empty string",
+			resp: func() *ErrorResponse {
+				raw := json.RawMessage(`{broken`)
+				return &ErrorResponse{Errors: &raw}
+			}(),
+			expected: "",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

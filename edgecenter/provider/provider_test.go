@@ -3,157 +3,205 @@ package provider
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/Edge-Center/edgecenteredgemon-go/edgecenter"
 )
 
 func TestClient_Request(t *testing.T) {
-	type fields struct {
-		httpc   *http.Client
-		signer  edgecenter.RequestSigner
-		ua      string
-		baseURL string
-	}
-	type args struct {
-		ctx     context.Context
-		method  string
-		path    string
-		payload interface{}
-		result  interface{}
-	}
 	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
+		name       string
+		handler    http.HandlerFunc
+		method     string
+		path       string
+		payload    interface{}
+		result     interface{}
+		wantErr    bool
+		errContain string
 	}{
 		{
-			name: "successful request with valid response",
-			fields: fields{
-				httpc: &http.Client{},
+			name: "GET 200 with JSON response",
+			handler: func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				json.NewEncoder(w).Encode(map[string]string{"key": "value"})
 			},
-			args: args{
-				ctx:    context.Background(),
-				method: http.MethodGet,
-				path:   "/test",
-				result: &map[string]interface{}{"key": "value"},
-			},
+			method:  http.MethodGet,
+			path:    "/test",
+			result:  &map[string]string{},
 			wantErr: false,
 		},
 		{
-			name: "request with server error",
-			fields: fields{
-				httpc: &http.Client{},
+			name: "POST 201 created",
+			handler: func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusCreated)
+				json.NewEncoder(w).Encode(map[string]int{"id": 42})
 			},
-			args: args{
-				ctx:    context.Background(),
-				method: http.MethodGet,
-				path:   "/test",
-				result: &map[string]interface{}{},
-			},
-			wantErr: true,
-		},
-		{
-			name: "request with custom user agent",
-			fields: fields{
-				httpc: &http.Client{},
-				ua:    "custom-user-agent",
-			},
-			args: args{
-				ctx:    context.Background(),
-				method: http.MethodGet,
-				path:   "/test",
-				result: &map[string]interface{}{"key": "value"},
-			},
+			method:  http.MethodPost,
+			path:    "/items",
+			payload: map[string]string{"name": "test"},
+			result:  &map[string]int{},
 			wantErr: false,
 		},
 		{
-			name: "request with timeout error",
-			fields: fields{
-				httpc: &http.Client{
-					Timeout: 1 * time.Millisecond,
-				},
+			name: "DELETE 204 no content, result nil",
+			handler: func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusNoContent)
 			},
-			args: args{
-				ctx:    context.Background(),
-				method: http.MethodGet,
-				path:   "/test",
-				result: &map[string]interface{}{},
-			},
-			wantErr: true,
-		},
-		{
-			name: "request with valid payload",
-			fields: fields{
-				httpc: &http.Client{},
-			},
-			args: args{
-				ctx:    context.Background(),
-				method: http.MethodPost,
-				path:   "/test",
-				payload: map[string]string{
-					"key": "value",
-				},
-				result: &map[string]interface{}{"response": "success"},
-			},
+			method:  http.MethodDelete,
+			path:    "/items/1",
+			result:  nil,
 			wantErr: false,
 		},
 		{
-			name: "request with invalid path",
-			fields: fields{
-				httpc: &http.Client{},
+			name: "400 bad request",
+			handler: func(w http.ResponseWriter, r *http.Request) {
+				http.Error(w, `{"error":"bad request"}`, http.StatusBadRequest)
 			},
-			args: args{
-				ctx:    context.Background(),
-				method: http.MethodGet,
-				path:   "/invalid-path",
-				result: &map[string]interface{}{},
+			method:     http.MethodPost,
+			path:       "/items",
+			payload:    map[string]string{"name": ""},
+			wantErr:    true,
+			errContain: "http 400",
+		},
+		{
+			name: "401 unauthorized",
+			handler: func(w http.ResponseWriter, r *http.Request) {
+				http.Error(w, "unauthorized", http.StatusUnauthorized)
 			},
-			wantErr: true,
+			method:     http.MethodGet,
+			path:       "/secret",
+			wantErr:    true,
+			errContain: "http 401",
+		},
+		{
+			name: "404 not found",
+			handler: func(w http.ResponseWriter, r *http.Request) {
+				http.Error(w, "not found", http.StatusNotFound)
+			},
+			method:     http.MethodGet,
+			path:       "/missing",
+			wantErr:    true,
+			errContain: "http 404",
+		},
+		{
+			name: "429 too many requests",
+			handler: func(w http.ResponseWriter, r *http.Request) {
+				http.Error(w, "rate limited", http.StatusTooManyRequests)
+			},
+			method:     http.MethodGet,
+			path:       "/test",
+			wantErr:    true,
+			errContain: "http 429",
+		},
+		{
+			name: "500 internal server error",
+			handler: func(w http.ResponseWriter, r *http.Request) {
+				http.Error(w, "internal error", http.StatusInternalServerError)
+			},
+			method:     http.MethodGet,
+			path:       "/test",
+			wantErr:    true,
+			errContain: "http 500",
+		},
+		{
+			name: "invalid JSON in response",
+			handler: func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.Write([]byte(`{broken json`))
+			},
+			method:     http.MethodGet,
+			path:       "/test",
+			result:     &map[string]string{},
+			wantErr:    true,
+			errContain: "decode response",
+		},
+		{
+			name: "nil payload -> no body",
+			handler: func(w http.ResponseWriter, r *http.Request) {
+				body, _ := io.ReadAll(r.Body)
+				if len(body) != 0 {
+					t.Errorf("expected empty body, got %d bytes", len(body))
+				}
+				w.WriteHeader(http.StatusOK)
+			},
+			method:  http.MethodGet,
+			path:    "/test",
+			payload: nil,
+			result:  nil,
+			wantErr: false,
+		},
+		{
+			name: "POST with payload encodes body",
+			handler: func(w http.ResponseWriter, r *http.Request) {
+				var got map[string]string
+				require.NoError(t, json.NewDecoder(r.Body).Decode(&got))
+				assert.Equal(t, "bar", got["foo"])
+				w.WriteHeader(http.StatusOK)
+			},
+			method:  http.MethodPost,
+			path:    "/test",
+			payload: map[string]string{"foo": "bar"},
+			result:  nil,
+			wantErr: false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				if r.URL.Path != tt.args.path {
-					t.Errorf("Expected path %s, but got %s", tt.args.path, r.URL.Path)
-				}
-				if tt.args.payload != nil {
-					decoder := json.NewDecoder(r.Body)
-					var payload map[string]string
-					if err := decoder.Decode(&payload); err != nil {
-						t.Errorf("Failed to decode payload: %v", err)
-					}
-				}
-
-				if tt.wantErr {
-					http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-				} else {
-					w.Header().Set("Content-Type", "application/json")
-					w.WriteHeader(http.StatusOK)
-					_ = json.NewEncoder(w).Encode(tt.args.result)
-				}
-			}))
+			ts := httptest.NewServer(tt.handler)
 			defer ts.Close()
 
-			tt.fields.baseURL = ts.URL
+			c := NewClient(ts.URL)
+			err := c.Request(context.Background(), tt.method, tt.path, tt.payload, tt.result)
 
-			c := &Client{
-				httpc:   tt.fields.httpc,
-				signer:  tt.fields.signer,
-				ua:      tt.fields.ua,
-				baseURL: tt.fields.baseURL,
-			}
-
-			err := c.Request(tt.args.ctx, tt.args.method, tt.args.path, tt.args.payload, tt.args.result)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Request() error = %v, wantErr %v", err, tt.wantErr)
+			if tt.wantErr {
+				require.Error(t, err)
+				if tt.errContain != "" {
+					assert.Contains(t, err.Error(), tt.errContain)
+				}
+			} else {
+				require.NoError(t, err)
 			}
 		})
 	}
+}
+
+func TestClient_Request_SetsHeaders(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
+		assert.Equal(t, "TestAgent/1.0", r.Header.Get("User-Agent"))
+		assert.Equal(t, "APIKey secret", r.Header.Get("Authorization"))
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer ts.Close()
+
+	signer := edgecenter.RequestSignerFunc(func(req *http.Request) error {
+		req.Header.Set("Authorization", "APIKey secret")
+		return nil
+	})
+
+	c := NewClient(ts.URL, WithUserAgent("TestAgent/1.0"), WithSigner(signer))
+	err := c.Request(context.Background(), http.MethodGet, "/check", nil, nil)
+	require.NoError(t, err)
+}
+
+func TestClient_Request_DecodesResponse(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{"ok": "true"})
+	}))
+	defer ts.Close()
+
+	c := NewClient(ts.URL)
+	var result map[string]string
+	err := c.Request(context.Background(), http.MethodGet, "/test", nil, &result)
+	require.NoError(t, err)
+	assert.Equal(t, "true", result["ok"])
 }
