@@ -30,7 +30,3 @@ type (
 	Request  = CheckPing
 	Response = CheckPing
 )
-
-type CreateResponse struct {
-	ID int `json:"id"`
-}

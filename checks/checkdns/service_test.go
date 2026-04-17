@@ -9,12 +9,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/Edge-Center/edgecenteredgemon-go/checks"
 	"github.com/Edge-Center/edgecenteredgemon-go/internal/testutil"
 )
 
 func TestService_Create(t *testing.T) {
 	mock := &testutil.MockRequester{}
-	mock.RespondWith(CreateResponse{ID: 1})
+	mock.RespondWith(checks.CreateResponse{ID: 1})
 
 	svc := New(mock)
 	resp, err := svc.Create(context.Background(), &Request{Name: "dns-check"})

@@ -32,7 +32,3 @@ type (
 	Request  = CheckRabbitMQ
 	Response = CheckRabbitMQ
 )
-
-type CreateResponse struct {
-	ID int `json:"id"`
-}
