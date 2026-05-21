@@ -32,7 +32,3 @@ type (
 	Request  = CheckSMTP
 	Response = CheckSMTP
 )
-
-type CreateResponse struct {
-	ID int `json:"id"`
-}

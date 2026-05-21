@@ -36,7 +36,3 @@ type (
 	Request  = CheckHTTP
 	Response = CheckHTTP
 )
-
-type CreateResponse struct {
-	ID int `json:"id"`
-}
