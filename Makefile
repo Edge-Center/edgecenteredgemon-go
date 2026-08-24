@@ -1,4 +1,4 @@
-.PHONY: docs build test test-v cover cover-check lint fmt vet tidy install-tools
+.PHONY: docs build test test-v test-integration cover cover-check lint fmt vet tidy install-tools
 
 build:
 	go build ./...
@@ -8,6 +8,9 @@ test:
 
 test-v:
 	go test -race -v ./...
+
+test-integration:
+	go test -tags=integration -race -count=1 -run TestLive ./integration/...
 
 cover:
 	go test -race -coverprofile=coverage.out ./...
