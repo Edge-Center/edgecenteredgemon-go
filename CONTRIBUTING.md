@@ -60,3 +60,19 @@ make cover-check
 network access or credentials. Live API tests run with
 `make test-integration` and require `EDGECENTER_RMON_BASE_URL` and
 `EDGECENTER_RMON_API_KEY`. Run `make fmt` before committing.
+
+## License
+
+edgecenteredgemon-go is licensed under the Apache License, Version 2.0
+(see LICENSE). By submitting a contribution (for example, a pull request),
+you agree that your contribution will be licensed under the same license,
+in accordance with Section 5 of the Apache License, Version 2.0.
+
+By submitting a contribution, you confirm that:
+
+- the contribution is your original work, or you otherwise have the right
+  to submit it under the Apache License, Version 2.0; and
+- if your employer or any other party has rights to your contribution,
+  you have received permission to submit it.
+
+If you do not agree with these terms, please do not submit a contribution.
