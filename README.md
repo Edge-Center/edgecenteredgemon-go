@@ -22,3 +22,8 @@ EDGECENTER_RMON_BASE_URL=https://api.example.com \
 EDGECENTER_RMON_API_KEY=xxxxxxxx \
 make test-integration
 ```
+
+## License
+
+This project is licensed under the Apache License 2.0, see [LICENSE](LICENSE).
+Copyright (c) 2025 LLC "EDGECENTER"
