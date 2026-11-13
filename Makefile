@@ -35,7 +35,7 @@ tidy:
 	go mod tidy
 
 install-tools:
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0
 	go install golang.org/x/tools/cmd/goimports@latest
 
 docs:
